@@ -1,0 +1,24 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "DLDC Software",
+    "longName": "RWBY Qrow Watchface",
+    "projectType": "native",
+    "resources": {
+        "media": []
+    },
+    "sdkVersion": "3",
+    "shortName": "Qrow Watchface",
+    "targetPlatforms": [
+        "aplite",
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "2d48644a-a334-486f-9f26-2713a427e4e9",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
