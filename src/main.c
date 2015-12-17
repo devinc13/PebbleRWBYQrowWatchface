@@ -92,7 +92,7 @@ static void main_window_load(Window *window) {
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
     // Show date
-    s_date_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(130, 140), bounds.size.w, 50));
+    s_date_layer = text_layer_create(GRect(0, 140, bounds.size.w, 50));
     text_layer_set_font(s_date_layer, s_rwby_date_font);
     text_layer_set_background_color(s_date_layer, GColorClear);
     text_layer_set_text_color(s_date_layer, GColorBlack);
@@ -100,10 +100,10 @@ static void main_window_load(Window *window) {
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
 
     // Show battery
-    s_battery_background_layer = layer_create(GRect(14, PBL_IF_ROUND_ELSE(125, 130), bounds.size.w - 28, 6));
+    s_battery_background_layer = layer_create(GRect(PBL_IF_ROUND_ELSE(24, 14), PBL_IF_ROUND_ELSE(135, 130), bounds.size.w - PBL_IF_ROUND_ELSE(48, 28), 6));
     layer_set_update_proc(s_battery_background_layer, battery_background_update_proc);
     layer_add_child(window_get_root_layer(window), s_battery_background_layer);
-    s_battery_layer = layer_create(GRect(15, PBL_IF_ROUND_ELSE(126, 131), bounds.size.w - 30, 4));
+    s_battery_layer = layer_create(GRect(PBL_IF_ROUND_ELSE(25, 15), PBL_IF_ROUND_ELSE(136, 131), bounds.size.w - PBL_IF_ROUND_ELSE(50, 30), 4));
     layer_set_update_proc(s_battery_layer, battery_update_proc);
     layer_add_child(window_get_root_layer(window), s_battery_layer);
 }
