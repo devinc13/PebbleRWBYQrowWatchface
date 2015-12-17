@@ -9,6 +9,12 @@
     "resources": {
         "media": [
             {
+                "file": "images/BT_ICON.png",
+                "name": "BT_ICON",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
                 "file": "images/QROW_EMBLEM.png",
                 "name": "QROW_EMBLEM",
                 "targetPlatforms": null,
