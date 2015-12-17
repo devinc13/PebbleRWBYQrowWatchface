@@ -9,6 +9,12 @@
     "resources": {
         "media": [
             {
+                "file": "images/LIGHTNING_BOLT.png",
+                "name": "LIGHTNING_BOLT",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
                 "file": "images/BT_ICON.png",
                 "name": "BT_ICON",
                 "targetPlatforms": null,

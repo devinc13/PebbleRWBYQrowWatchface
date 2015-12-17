@@ -1,7 +1,9 @@
 #include <pebble.h>
+#include "effect_layer.h"
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
+static TextLayer *s_am_pm_layer;
 static TextLayer *s_date_layer;
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
@@ -12,6 +14,9 @@ static Layer *s_battery_layer;
 static Layer *s_battery_background_layer;
 static BitmapLayer *s_background_layer, *s_bt_icon_layer;
 static GBitmap *s_background_bitmap, *s_bt_icon_bitmap;
+static BitmapLayer *s_background_layer, *s_charge_icon_layer;
+static GBitmap *s_background_bitmap, *s_charge_icon_bitmap;
+static EffectLayer *s_effect_layer;
 
 static void update_time() {
     time_t temp = time(NULL); 
@@ -19,8 +24,17 @@ static void update_time() {
 
     // Display time
     static char s_time_buffer[8];
-    strftime(s_time_buffer, sizeof(s_time_buffer), clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
+    strftime(s_time_buffer, sizeof(s_time_buffer), clock_is_24h_style() ? "%H:%M" : "%l:%M ", tick_time);
     text_layer_set_text(s_time_layer, s_time_buffer);
+    
+    if (clock_is_24h_style()) {
+        layer_set_hidden(text_layer_get_layer(s_am_pm_layer), true);
+    } else {
+        layer_set_hidden(text_layer_get_layer(s_am_pm_layer), false);
+        static char s_am_pm_buffer[4];
+        strftime(s_am_pm_buffer, sizeof(s_am_pm_buffer), "%p", tick_time);
+        text_layer_set_text(s_am_pm_layer, s_am_pm_buffer);
+    }
 }
 
 static void update_date() {
@@ -65,18 +79,19 @@ static void battery_background_update_proc(Layer *layer, GContext *ctx) {
 }
 
 static void battery_callback(BatteryChargeState state) {
+    layer_set_hidden(bitmap_layer_get_layer(s_charge_icon_layer), !state.is_charging);
     s_battery_level = state.charge_percent;
     layer_mark_dirty(s_battery_layer);
 }
 
 static void bluetooth_callback(bool connected) {
-  // Show icon if disconnected
-  layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
+    // Show icon if disconnected
+    layer_set_hidden(bitmap_layer_get_layer(s_bt_icon_layer), connected);
 
-  if(!connected) {
-    // Issue a vibrating alert
-    vibes_double_pulse();
-  }
+    if(!connected) {
+        // Issue a vibrating alert
+        vibes_double_pulse();
+    }
 }
 
 static void main_window_load(Window *window) {
@@ -95,12 +110,19 @@ static void main_window_load(Window *window) {
     s_rwby_date_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_RWBY_DATE_FONT_20));
 
     // Show time
-    s_time_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(10, 2), bounds.size.w, 50));
+    s_time_layer = text_layer_create(GRect(clock_is_24h_style() ? 0 : 10, PBL_IF_ROUND_ELSE(10, 2), clock_is_24h_style() ? bounds.size.w : bounds.size.w - 10, 50));
     text_layer_set_font(s_time_layer, s_rwby_time_font);
     text_layer_set_background_color(s_time_layer, GColorClear);
     text_layer_set_text_color(s_time_layer, GColorBlack);
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+    
+    // Add am pm indicator
+    s_am_pm_layer = text_layer_create(GRect(PBL_IF_ROUND_ELSE(130, 112), PBL_IF_ROUND_ELSE(35, 27), bounds.size.w, 50));
+    text_layer_set_font(s_am_pm_layer, s_rwby_date_font);
+    text_layer_set_background_color(s_am_pm_layer, GColorClear);
+    text_layer_set_text_color(s_am_pm_layer, GColorBlack);
+    layer_add_child(window_layer, text_layer_get_layer(s_am_pm_layer));
 
     // Show date
     s_date_layer = text_layer_create(GRect(0, 140, bounds.size.w, 50));
@@ -120,16 +142,29 @@ static void main_window_load(Window *window) {
 
     // Setup bluetooth indicator
     s_bt_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_BT_ICON);
-    s_bt_icon_layer = bitmap_layer_create(GRect(PBL_IF_ROUND_ELSE(15, 10), 100, 20, 20));
+    s_bt_icon_layer = bitmap_layer_create(GRect(PBL_IF_ROUND_ELSE(34, 24), PBL_IF_ROUND_ELSE(110, 105), 20, 20));
     bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
     layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_icon_layer));
     bluetooth_callback(connection_service_peek_pebble_app_connection());
+    
+    // Setup charge indicator
+    s_charge_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_LIGHTNING_BOLT);
+    s_charge_icon_layer = bitmap_layer_create(GRect(PBL_IF_ROUND_ELSE(18, 8), PBL_IF_ROUND_ELSE(110, 105), 16, 20));
+    bitmap_layer_set_bitmap(s_charge_icon_layer, s_charge_icon_bitmap);
+    layer_add_child(window_layer, bitmap_layer_get_layer(s_charge_icon_layer));
+    
+    // Setup inverting layer
+    s_effect_layer = effect_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
+    effect_layer_add_effect(s_effect_layer, effect_invert, NULL);
+    layer_add_child(window_layer, effect_layer_get_layer(s_effect_layer));
+
 }
 
 static void main_window_unload(Window *window) {
     // Destroy all the things
     text_layer_destroy(s_time_layer);
     text_layer_destroy(s_date_layer);
+    text_layer_destroy(s_am_pm_layer);
     fonts_unload_custom_font(s_rwby_time_font);
     fonts_unload_custom_font(s_rwby_date_font);
     gbitmap_destroy(s_background_bitmap);
@@ -138,6 +173,9 @@ static void main_window_unload(Window *window) {
     layer_destroy(s_battery_background_layer);
     gbitmap_destroy(s_bt_icon_bitmap);
     bitmap_layer_destroy(s_bt_icon_layer);
+    gbitmap_destroy(s_charge_icon_bitmap);
+    bitmap_layer_destroy(s_charge_icon_layer);
+    effect_layer_destroy(s_effect_layer);
 }
 
 static void init() {
