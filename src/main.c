@@ -3,12 +3,14 @@
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_date_layer;
-
 static BitmapLayer *s_background_layer;
 static GBitmap *s_background_bitmap;
-
 static GFont s_rwby_time_font;
 static GFont s_rwby_date_font;
+static int s_battery_level;
+static Layer *s_battery_layer;
+static Layer *s_battery_background_layer;
+
 
 static void update_time() {
     time_t temp = time(NULL); 
@@ -18,15 +20,52 @@ static void update_time() {
     static char s_time_buffer[8];
     strftime(s_time_buffer, sizeof(s_time_buffer), clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
     text_layer_set_text(s_time_layer, s_time_buffer);
+}
+
+static void update_date() {
+    time_t temp = time(NULL); 
+    struct tm *tick_time = localtime(&temp);
 
     // Display date
     static char s_date_buffer[12];
-    strftime(s_date_buffer, sizeof(s_date_buffer), "%a, %b %e", tick_time);
+    strftime(s_date_buffer, sizeof(s_date_buffer), "%a, %d %b", tick_time);
     text_layer_set_text(s_date_layer, s_date_buffer);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-    update_time();
+    if((units_changed & MINUTE_UNIT) != 0) {
+        update_time();
+    }
+
+    if((units_changed & DAY_UNIT) != 0) {
+        update_date();
+    }
+}
+
+static void battery_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+
+    // Find the width of the bar
+    int width = (int)(float)(((float)s_battery_level / 100.0F) * 114.0F);
+
+    // Draw the background
+    graphics_context_set_fill_color(ctx, GColorWhite);
+    graphics_fill_rect(ctx, bounds, 8, GCornersAll);
+
+    // Draw the bar
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    graphics_fill_rect(ctx, GRect(0, 0, width, bounds.size.h), 8, GCornersAll);
+}
+
+static void battery_background_update_proc(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+    graphics_context_set_fill_color(ctx, GColorBlack);    
+    graphics_fill_rect(ctx, bounds, 8, GCornersAll);
+}
+
+static void battery_callback(BatteryChargeState state) {
+    s_battery_level = state.charge_percent;
+    layer_mark_dirty(s_battery_layer);
 }
 
 static void main_window_load(Window *window) {
@@ -52,13 +91,21 @@ static void main_window_load(Window *window) {
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
 
-    // Show Date
-    s_date_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(130, 135), bounds.size.w, 50));
+    // Show date
+    s_date_layer = text_layer_create(GRect(0, PBL_IF_ROUND_ELSE(130, 140), bounds.size.w, 50));
     text_layer_set_font(s_date_layer, s_rwby_date_font);
     text_layer_set_background_color(s_date_layer, GColorClear);
     text_layer_set_text_color(s_date_layer, GColorBlack);
     text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+
+    // Show battery
+    s_battery_background_layer = layer_create(GRect(14, PBL_IF_ROUND_ELSE(125, 130), bounds.size.w - 28, 6));
+    layer_set_update_proc(s_battery_background_layer, battery_background_update_proc);
+    layer_add_child(window_get_root_layer(window), s_battery_background_layer);
+    s_battery_layer = layer_create(GRect(15, PBL_IF_ROUND_ELSE(126, 131), bounds.size.w - 30, 4));
+    layer_set_update_proc(s_battery_layer, battery_update_proc);
+    layer_add_child(window_get_root_layer(window), s_battery_layer);
 }
 
 static void main_window_unload(Window *window) {
@@ -69,6 +116,8 @@ static void main_window_unload(Window *window) {
     fonts_unload_custom_font(s_rwby_date_font);
     gbitmap_destroy(s_background_bitmap);
     bitmap_layer_destroy(s_background_layer);
+    layer_destroy(s_battery_layer);
+    layer_destroy(s_battery_background_layer);
 }
 
 
@@ -86,11 +135,16 @@ static void init() {
     // Show the Window on the watch, with animated=true
     window_stack_push(s_main_window, true);
 
-    // Make sure the time is displayed from the start
+    // Make sure the time, date and battery are displayed from the start
     update_time();
+    update_date();
+    battery_callback(battery_state_service_peek());
 
     // Register with TickTimerService
     tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+
+    // Register for battery level updates
+    battery_state_service_subscribe(battery_callback);
 }
 
 static void deinit() {
