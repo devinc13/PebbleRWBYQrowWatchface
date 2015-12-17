@@ -7,7 +7,26 @@
     "longName": "RWBY Qrow Watchface",
     "projectType": "native",
     "resources": {
-        "media": []
+        "media": [
+            {
+                "file": "images/QROW_EMBLEM.png",
+                "name": "QROW_EMBLEM",
+                "targetPlatforms": null,
+                "type": "bitmap"
+            },
+            {
+                "file": "fonts/RWBY_DATE_FONT.ttf",
+                "name": "RWBY_DATE_FONT_20",
+                "targetPlatforms": null,
+                "type": "font"
+            },
+            {
+                "file": "fonts/RWBY_TIME_FONT.ttf",
+                "name": "RWBY_TIME_FONT_48",
+                "targetPlatforms": null,
+                "type": "font"
+            }
+        ]
     },
     "sdkVersion": "3",
     "shortName": "Qrow Watchface",
