@@ -1,6 +1,8 @@
 #include <pebble.h>
 #include "effect_layer.h"
 
+#define KEY_BACKGROUND_COLOR 0
+
 static Window *s_main_window;
 static TextLayer *s_time_layer;
 static TextLayer *s_am_pm_layer;
@@ -18,6 +20,18 @@ static BitmapLayer *s_background_layer, *s_charge_icon_layer;
 static GBitmap *s_background_bitmap, *s_charge_icon_bitmap;
 static EffectLayer *s_effect_layer;
 
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+    // Get the first pair
+    Tuple *data = dict_find(iterator, KEY_BACKGROUND_COLOR);
+    if (strcmp("white", data->value->cstring) == 0) {
+        // Hide inverting layer
+        layer_set_hidden(effect_layer_get_layer(s_effect_layer), true);
+    } else {
+        // Show inverting layer
+        layer_set_hidden(effect_layer_get_layer(s_effect_layer), false);
+    }
+}
+
 static void update_time() {
     time_t temp = time(NULL); 
     struct tm *tick_time = localtime(&temp);
@@ -26,7 +40,7 @@ static void update_time() {
     static char s_time_buffer[8];
     strftime(s_time_buffer, sizeof(s_time_buffer), clock_is_24h_style() ? "%H:%M" : "%l:%M ", tick_time);
     text_layer_set_text(s_time_layer, s_time_buffer);
-    
+
     if (clock_is_24h_style()) {
         layer_set_hidden(text_layer_get_layer(s_am_pm_layer), true);
     } else {
@@ -116,7 +130,7 @@ static void main_window_load(Window *window) {
     text_layer_set_text_color(s_time_layer, GColorBlack);
     text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
     layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
-    
+
     // Add am pm indicator
     s_am_pm_layer = text_layer_create(GRect(PBL_IF_ROUND_ELSE(130, 112), PBL_IF_ROUND_ELSE(35, 27), bounds.size.w, 50));
     text_layer_set_font(s_am_pm_layer, s_rwby_date_font);
@@ -146,18 +160,17 @@ static void main_window_load(Window *window) {
     bitmap_layer_set_bitmap(s_bt_icon_layer, s_bt_icon_bitmap);
     layer_add_child(window_layer, bitmap_layer_get_layer(s_bt_icon_layer));
     bluetooth_callback(connection_service_peek_pebble_app_connection());
-    
+
     // Setup charge indicator
     s_charge_icon_bitmap = gbitmap_create_with_resource(RESOURCE_ID_LIGHTNING_BOLT);
     s_charge_icon_layer = bitmap_layer_create(GRect(PBL_IF_ROUND_ELSE(18, 8), PBL_IF_ROUND_ELSE(110, 105), 16, 20));
     bitmap_layer_set_bitmap(s_charge_icon_layer, s_charge_icon_bitmap);
     layer_add_child(window_layer, bitmap_layer_get_layer(s_charge_icon_layer));
-    
+
     // Setup inverting layer
     s_effect_layer = effect_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
     effect_layer_add_effect(s_effect_layer, effect_invert, NULL);
     layer_add_child(window_layer, effect_layer_get_layer(s_effect_layer));
-
 }
 
 static void main_window_unload(Window *window) {
@@ -207,6 +220,10 @@ static void init() {
     connection_service_subscribe((ConnectionHandlers) {
         .pebble_app_connection_handler = bluetooth_callback
     });
+
+    // Register message callback
+    app_message_register_inbox_received(inbox_received_callback);
+    app_message_open(64, 64);
 }
 
 static void deinit() {

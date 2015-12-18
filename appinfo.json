@@ -1,10 +1,12 @@
 {
-    "appKeys": {},
+    "appKeys": {
+        "KEY_BACKGROUND_COLOR": 0
+    },
     "capabilities": [
-        ""
+        "configurable"
     ],
     "companyName": "DLDC Software",
-    "longName": "RWBY Qrow Watchface",
+    "longName": "RWBY Qrow Symbol",
     "projectType": "native",
     "resources": {
         "media": [
@@ -41,7 +43,7 @@
         ]
     },
     "sdkVersion": "3",
-    "shortName": "Qrow Watchface",
+    "shortName": "RWBY Qrow",
     "targetPlatforms": [
         "aplite",
         "basalt",
