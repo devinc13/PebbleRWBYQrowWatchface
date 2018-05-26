@@ -1,0 +1,64 @@
+{
+    "author": "DLDC Software",
+    "dependencies": {
+        "pebble-clay": "^1.0.4"
+    },
+    "keywords": [],
+    "name": "rwby-qrow",
+    "pebble": {
+        "capabilities": [
+            "configurable"
+        ],
+        "displayName": "RWBY Qrow Symbol",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "LightTheme"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/LIGHTNING_BOLT.png",
+                    "name": "LIGHTNING_BOLT",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/BT_ICON.png",
+                    "name": "BT_ICON",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "images/QROW_EMBLEM.png",
+                    "name": "QROW_EMBLEM",
+                    "targetPlatforms": null,
+                    "type": "bitmap"
+                },
+                {
+                    "file": "fonts/RWBY_DATE_FONT.ttf",
+                    "name": "RWBY_DATE_FONT_20",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
+                    "file": "fonts/RWBY_TIME_FONT.ttf",
+                    "name": "RWBY_TIME_FONT_48",
+                    "targetPlatforms": null,
+                    "type": "font"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk"
+        ],
+        "uuid": "2d48644a-a334-486f-9f26-2713a427e4e9",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "1.0.0"
+}

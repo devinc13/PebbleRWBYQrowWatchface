@@ -1,7 +1,8 @@
 #include <pebble.h>
 #include "effect_layer.h"
 
-#define KEY_BACKGROUND_COLOR 0
+// Persistent storage key
+#define SETTINGS_KEY 1
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -20,16 +21,42 @@ static BitmapLayer *s_background_layer, *s_charge_icon_layer;
 static GBitmap *s_background_bitmap, *s_charge_icon_bitmap;
 static EffectLayer *s_effect_layer;
 
-static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
-    // Get the first pair
-    Tuple *data = dict_find(iterator, KEY_BACKGROUND_COLOR);
-    if (strcmp("white", data->value->cstring) == 0) {
-        // Hide inverting layer
-        layer_set_hidden(effect_layer_get_layer(s_effect_layer), true);
-    } else {
-        // Show inverting layer
-        layer_set_hidden(effect_layer_get_layer(s_effect_layer), false);
+
+// Define our settings struct
+typedef struct ClaySettings {
+  bool LightTheme;
+} ClaySettings;
+
+// An instance of the struct
+static ClaySettings settings;
+
+// Initialize the default settings
+static void clay_default_settings() {
+  settings.LightTheme = false;
+}
+
+// Save the settings to persistent storage
+static void clay_save_settings() {
+  persist_write_data(SETTINGS_KEY, &settings, sizeof(settings));
+}
+
+// Read settings from persistent storage
+static void clay_load_settings() {
+  // Load the default settings
+  clay_default_settings();
+  // Read settings from persistent storage, if they exist
+  persist_read_data(SETTINGS_KEY, &settings, sizeof(settings));
+}
+
+static void inbox_received_callback(DictionaryIterator *iterator, void *context) {   
+    // Get the theme preferences
+    Tuple *light_t = dict_find(iterator, MESSAGE_KEY_LightTheme);
+    if (light_t) {
+        settings.LightTheme = light_t->value->int32 == 1;
+        layer_set_hidden(effect_layer_get_layer(s_effect_layer), settings.LightTheme);
     }
+    
+    clay_save_settings();
 }
 
 static void update_time() {
@@ -171,6 +198,7 @@ static void main_window_load(Window *window) {
     s_effect_layer = effect_layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
     effect_layer_add_effect(s_effect_layer, effect_invert, NULL);
     layer_add_child(window_layer, effect_layer_get_layer(s_effect_layer));
+    layer_set_hidden(effect_layer_get_layer(s_effect_layer), settings.LightTheme);
 }
 
 static void main_window_unload(Window *window) {
@@ -192,6 +220,9 @@ static void main_window_unload(Window *window) {
 }
 
 static void init() {
+    // Load saved settings
+    clay_load_settings();
+
     // Create main Window
     s_main_window = window_create();
     window_set_background_color(s_main_window, GColorWhite);
